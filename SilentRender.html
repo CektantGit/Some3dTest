@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vizbl FBX test</title>
+    <style>
+        body {
+            overflow: hidden;
+            margin: 0px;
+        }
+
+        a {
+            color: #ffffff;
+        }
+
+        #instructions {
+            color: white;
+            position: absolute;
+            left: 50%;
+            top: 10px;
+            margin-left: -120px;
+            font-family: monospace;
+        }
+
+        #render-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+
+        .render-image {
+            margin: 5px;
+            border: 1px solid #ffffff;
+        }
+
+        .button-indicator .indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 5px;
+        }
+    </style>
+    <script src="https://unpkg.com/es-module-shims@1.5.0/dist/es-module-shims.min.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+                "OrbitControls": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/controls/OrbitControls.js",
+                "FBXLoader": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/loaders/FBXLoader.js",
+                "Stats": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/libs/stats.module.js",
+                "RGBELoader": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/loaders/RGBELoader.js",
+                "dat.gui": "https://cdn.jsdelivr.net/npm/dat.gui@0.7.7/build/dat.gui.module.js"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="instructions">
+        Importer for <a href="https://www.vizbl.us" target="_blank" rel="nofollow noopener">Vizbl</a>
+    </div>
+    <div id="render-container"></div>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'OrbitControls';
+        import { FBXLoader } from 'FBXLoader';
+        import Stats from 'Stats';
+        import { RGBELoader } from 'RGBELoader';
+        import * as dat from 'dat.gui';
+
+        const scene = new THREE.Scene();
+
+        let renderer;
+        let camera2;
+        const material = new THREE.MeshStandardMaterial();
+        const rgbeLoader = new RGBELoader();
+        
+        rgbeLoader.load("https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_08_1k.hdr", (texture) => {
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            scene.background = new THREE.Color(0xffffff);
+            scene.environment = texture;
+        });
+
+        const light = new THREE.PointLight(0xffffff, 0.1);
+        light.position.set(0.8, 1.4, 1.0);
+        scene.add(light);
+
+        const renderContainer = document.querySelector("#render-container");
+
+        let loadedObject;
+
+        const gui = new dat.GUI();
+        const params = {
+            loadFBX: () => document.getElementById('file-input').click(),
+            loadTexture: () => document.getElementById('texture-input').click(),
+            loadNormalMap: () => document.getElementById('normal-input').click(),
+            loadORMMap: () => document.getElementById('orm-input').click(),
+            render: renderViews
+        };
+
+        gui.add(params, 'loadFBX').name('Load FBX').domElement.classList.add('button-indicator');
+        gui.add(params, 'loadTexture').name('Load Texture').domElement.classList.add('button-indicator');
+        gui.add(params, 'loadNormalMap').name('Load Normal Map').domElement.classList.add('button-indicator');
+        gui.add(params, 'loadORMMap').name('Load ORM Map').domElement.classList.add('button-indicator');
+        gui.add(params, 'render').name('Render').domElement.classList.add('button-indicator');
+
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.fbx';
+        fileInput.style.display = 'none';
+        fileInput.id = 'file-input';
+        document.body.appendChild(fileInput);
+
+        const textureInput = document.createElement('input');
+        textureInput.type = 'file';
+        textureInput.accept = '.png,.jpg,.jpeg';
+        textureInput.style.display = 'none';
+        textureInput.id = 'texture-input';
+        document.body.appendChild(textureInput);
+
+        const normalInput = document.createElement('input');
+        normalInput.type = 'file';
+        normalInput.accept = '.png,.jpg,.jpeg';
+        normalInput.style.display = 'none';
+        normalInput.id = 'normal-input';
+        document.body.appendChild(normalInput);
+
+        const ormInput = document.createElement('input');
+        ormInput.type = 'file';
+        ormInput.accept = '.png,.jpg,.jpeg';
+        ormInput.style.display = 'none';
+        ormInput.id = 'orm-input';
+        document.body.appendChild(ormInput);
+
+        fileInput.addEventListener("change", function(event) {
+            const reader = new FileReader();
+            reader.addEventListener("load", function(event) {
+                const contents = event.target.result;
+                const loader = new FBXLoader();
+                loadedObject = loader.parse(contents);
+                loadedObject.traverse(function(child) {
+                    if (child.isMesh) {
+                        child.material = material;
+                    }
+                });
+                loadedObject.scale.set(0.01, 0.01, 0.01);
+                var box = new THREE.Box3().setFromObject(loadedObject);
+                var center = new THREE.Vector3();
+                box.getCenter(center);
+                loadedObject.position.sub(center);
+                scene.add(loadedObject);
+            });
+            reader.readAsArrayBuffer(this.files[0]);
+        });
+
+        textureInput.addEventListener("change", function(event) {
+            const reader = new FileReader();
+            reader.addEventListener("load", function(event) {
+                const texture = new THREE.TextureLoader().load(URL.createObjectURL(textureInput.files[0]));
+                texture.colorSpace = THREE.SRGBColorSpace;
+                material.map = texture;
+                material.needsUpdate = true;
+            });
+            reader.readAsArrayBuffer(this.files[0]);
+        });
+
+        normalInput.addEventListener("change", function(event) {
+            const reader = new FileReader();
+            reader.addEventListener("load", function(event) {
+                const texture = new THREE.TextureLoader().load(URL.createObjectURL(normalInput.files[0]));
+                material.normalMap = texture;
+                material.needsUpdate = true;
+            });
+            reader.readAsArrayBuffer(this.files[0]);
+        });
+
+        ormInput.addEventListener("change", function(event) {
+            const reader = new FileReader();
+            reader.addEventListener("load", function(event) {
+                const texture = new THREE.TextureLoader().load(URL.createObjectURL(ormInput.files[0]));
+                material.aoMap = texture;
+                material.roughnessMap = texture;
+                material.metalnessMap = texture;
+                material.metalness = 1.0;
+                material.needsUpdate = true;
+            });
+            reader.readAsArrayBuffer(this.files[0]);
+        });
+
+        function renderViews() {
+            // Create the renderer and add it to the document
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(1000, 1000);
+            document.body.appendChild(renderer.domElement);
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+            camera2 = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+
+            // Set up first render view
+            camera2.position.set(1.0, 1.0, 2.0);
+            camera2.lookAt(0, 0, 0);
+            renderer.render(scene, camera2);
+            saveRender("view1.png");
+
+            // Set up second render view
+            camera2.position.set(-1.0, 1.0, 2.0);
+            camera2.lookAt(0, 0, 0);
+            renderer.render(scene, camera2);
+            saveRender("view2.png");
+
+            // Remove the renderer from the document
+            document.body.removeChild(renderer.domElement);
+            renderer.dispose();
+            renderer = null;
+        }
+
+        function saveRender(filename) {
+            const imgData = renderer.domElement.toDataURL("image/png");
+            const a = document.createElement("a");
+            a.href = imgData;
+            a.target = "_blank";
+            const img = document.createElement("img");
+            img.src = imgData;
+            img.className = "render-image";
+            a.appendChild(img);
+            renderContainer.appendChild(a);
+            img.onload = () => {
+                img.style.width = `${img.naturalWidth * 0.2}px`;
+                img.style.height = `${img.naturalHeight * 0.2}px`;
+            };
+        }
+
+    </script>
+</body>
+</html>
