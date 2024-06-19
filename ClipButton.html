@@ -7,6 +7,7 @@
     <style>
         body {
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
@@ -22,13 +23,19 @@
             background-color: #007bff;
             color: white;
             transition: background-color 0.3s ease;
+            margin-top: 20px;
         }
         button:hover {
             background-color: #0056b3;
         }
+        img {
+            width: 200px;
+            height: 200px;
+        }
     </style>
 </head>
 <body>
+    <img src="http://qrcoder.ru/code/?https%3A%2F%2Fappclip.apple.com%2Fid%3Fp%3Dcom.us.vizbl.Clip%26tinuuid%3DFolajnY7Rqi6RW3zmkYe4Q&4&0" alt="QR Code">
     <button onclick="window.location.href='https://appclip.apple.com/id?p=com.us.vizbl.Clip&tinuuid=FolajnY7Rqi6RW3zmkYe4Q'">Open App Clip</button>
 </body>
 </html>
