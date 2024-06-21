@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Model Viewer</title>
+</head>
+<body>
+    <button id="arButton">View in AR</button>
+
+    <script>
+        document.getElementById('arButton').addEventListener('click', function() {
+            // Проверка, поддерживается ли AR Quick Look на устройстве
+            const anchor = document.createElement('a');
+            anchor.rel = 'ar';
+            anchor.href = 'resource/3d.glb';
+
+            // Для устройств iOS
+            if (window.navigator.userAgent.indexOf('iPhone') !== -1 || window.navigator.userAgent.indexOf('iPad') !== -1) {
+                anchor.appendChild(document.createElement('img'));
+                document.body.appendChild(anchor);
+                anchor.click();
+                document.body.removeChild(anchor);
+            } else {
+                // Для устройств Android
+                window.location = `intent://arvr.google.com/scene-viewer/1.0?file=resource/3d.glb#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;end;`;
+            }
+        });
+    </script>
+</body>
+</html>
