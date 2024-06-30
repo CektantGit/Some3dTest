@@ -5,23 +5,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Permissions-Policy" content="interest-cohort=()">
   <title>Родительская страница</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background-color: #ffffff;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    button {
+      width: 60px;
+      height: 60px;
+      margin: 10px;
+      border-radius: 50%;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      outline: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
 </head>
 <body>
-  <h1>Родительская страница</h1>
+  <button onclick="callHandleMaterialChange(0)">0</button>
+  <button onclick="callHandleMaterialChange(1)">1</button>
+  <button onclick="callHandleMaterialChange(2)">2</button>
+  <button onclick="callHandleMaterialChange(3)">3</button>
 
-  <button onclick="callHandleMaterialChange(1)">Изменить текстуру на материал 1</button>
-  <button onclick="callHandleMaterialChange(2)">Изменить текстуру на материал 2</button>
-
-  <iframe id="viewerIframe" src="https://cektantgit.github.io/Some3dTest/model_Viewer_color.html?tinuuid=_Q4GY2ikTcS0VVn4ZlaH5w" width="600" height="600"></iframe>
+  <iframe id="viewerIframe" src="https://cektantgit.github.io/Some3dTest/model_Viewer_color.html?tinuuid=_Q4GY2ikTcS0VVn4ZlaH5w" width="800" height="800"></iframe>
 
   <script>
     function callHandleMaterialChange(materialIndex) {
       var iframe = document.getElementById('viewerIframe');
-      // Отправляем сообщение в iframe
       iframe.contentWindow.postMessage({
         type: 'handleMaterialChange',
         materialIndex: materialIndex
-      }, 'https://cektantgit.github.io'); // Здесь указываем только базовый URL, без пути к файлу
+      }, 'https://cektantgit.github.io');
     }
   </script>
 </body>
