@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Изменение текстуры в Model Viewer</title>
+  <style>
+    body {
+      background-color: rgba(255,255,255,0.85);
+      font-family: Arial, Helvetica, sans-serif;
+      color: #4a5a8a;
+    }
+    h1 {
+      margin: 0;
+      font-size: 16pt;
+    }
+    model-viewer {
+      width: 512px;
+      height: 512px;
+      border: 2px solid black;
+      background-color: #484E61;
+      margin-top: 15px;
+    }
+    .material-buttons {
+      text-align: center;
+      margin-top: 15px;
+    }
+    .material-buttons button {
+      margin: 5px;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Выберите материал для изменения текстуры в модели</h1>
+  <div class="material-buttons" id="materialButtons">
+    <!-- Кнопки будут динамически добавлены -->
+  </div>
+  <model-viewer
+    id="modelA"
+    camera-controls
+    shadow-intensity="0"
+    environment-image="neutral"
+    exposure="0.5"
+  ></model-viewer>
+
+  <script src="https://unpkg.com/@google/model-viewer@1.12.0/dist/model-viewer-umd.js"></script>
+  <script>
+    const modelViewer = document.getElementById("modelA");
+    const materialButtonsContainer = document.getElementById("materialButtons");
+    let cachedMaterialData = null; // Переменная для кеширования данных о материалах
+
+    // Загрузка данных о материалах и установка модели
+    async function setupModelAndViewer() {
+      cachedMaterialData = await fetchMaterialData();
+      if (cachedMaterialData) {
+        const modelUrl = cachedMaterialData.materials[0].native.glbUrl; // Предположим, что в ответе API есть поле glbUrl
+
+        // Устанавливаем модель в элемент model-viewer
+        modelViewer.setAttribute('src', modelUrl);
+
+        // Создание кнопок для каждого материала
+        cachedMaterialData.materials.forEach((material, index) => {
+          const button = document.createElement("button");
+          button.textContent = material.name;
+          button.addEventListener("click", () => handleMaterialChange(index));
+          materialButtonsContainer.appendChild(button);
+        });
+      }
+    }
+
+    modelViewer.addEventListener("error", (event) => {
+      console.error("Ошибка загрузки модели:", event);
+    });
+
+    async function fetchMaterialData() {
+        // Получаем параметры URL
+        const urlParams = new URLSearchParams(window.location.search);
+        // Извлекаем значение tinuuid из параметров URL или задаем значение по умолчанию
+        const tinuuid = urlParams.get('tinuuid') || 'oWb5XjXrRrOXazkxqveazg';
+        
+      const apiUrl = "https://api.vizbl.us/obj/Fetch";
+      const requestBody = {
+        "tinuuid": tinuuid
+      };
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+          throw new Error(`Ошибка HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error("Ошибка при получении данных:", error);
+        return null;
+      }
+    }
+
+    async function handleMaterialChange(materialIndex) {
+      if (!cachedMaterialData || !cachedMaterialData.materials || cachedMaterialData.materials.length <= materialIndex) {
+        console.error(`Данные о материалах не загружены или некорректны для индекса ${materialIndex}`);
+        return;
+      }
+
+      const selectedMaterial = cachedMaterialData.materials[materialIndex];
+
+      // Применяем текстуру ко всем материалам модели
+      modelViewer.model.materials.forEach(async (modelMaterial, index) => {
+        if (selectedMaterial.items[index] && selectedMaterial.items[index].texture) {
+          const textureUrl = selectedMaterial.items[index].texture.url;
+          const normalUrl = selectedMaterial.items[index].normalMap.url;
+          const ormUrl = selectedMaterial.items[index].textureMro.url;
+          try {
+            const texture = await modelViewer.createTexture(textureUrl);
+            const normalMap = await modelViewer.createTexture(normalUrl);
+            const orm = await modelViewer.createTexture(ormUrl);
+            modelMaterial.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
+            modelMaterial.normalTexture.setTexture(normalMap);
+            //modelMaterial.pbrMetallicRoughness.occlusionTexture.setTexture(orm);
+            modelMaterial.pbrMetallicRoughness.metallicRoughnessTexture.setTexture(orm);
+            console.log(`Текстура успешно применена для материала ${selectedMaterial.name}`);
+          } catch (error) {
+            console.error(`Ошибка при применении текстуры для материала ${selectedMaterial.name}:`, error);
+          }
+        }
+      });
+    }
+      // Принимаем сообщения от родительской страницы
+      window.addEventListener('message', function(event) {
+        if (event.origin !==  window.location.origin ) return; // Замените на URL вашего сайта
+
+        const data = event.data;
+
+        // Обрабатываем сообщение вызова handleMaterialChange
+        if (data.type === 'handleMaterialChange') {
+          const materialIndex = data.materialIndex;
+          handleMaterialChange(materialIndex);
+        }
+      });
+
+    // Вызываем функцию для установки модели и материалов
+    setupModelAndViewer();
+  </script>
+</body>
+</html>
