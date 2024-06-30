@@ -36,7 +36,6 @@
   </style>
 </head>
 <body>
-  <h1>Выберите материал для изменения текстуры в модели</h1>
   <div class="material-buttons" id="materialButtons">
     <!-- Кнопки будут динамически добавлены -->
   </div>
@@ -58,18 +57,22 @@
     async function setupModelAndViewer() {
       cachedMaterialData = await fetchMaterialData();
       if (cachedMaterialData) {
-        const modelUrl = cachedMaterialData.materials[0].native.glbUrl; // Предположим, что в ответе API есть поле glbUrl
-
-        // Устанавливаем модель в элемент model-viewer
+        const modelUrl = cachedMaterialData.materials[0].native.glbUrl;
         modelViewer.setAttribute('src', modelUrl);
 
-        // Создание кнопок для каждого материала
-        cachedMaterialData.materials.forEach((material, index) => {
-          const button = document.createElement("button");
-          button.textContent = material.name;
-          button.addEventListener("click", () => handleMaterialChange(index));
-          materialButtonsContainer.appendChild(button);
-        });
+        const urlParams = new URLSearchParams(window.location.search);
+        const buttonParam = urlParams.get('button');
+
+        if (buttonParam === 'true') {
+          cachedMaterialData.materials.forEach((material, index) => {
+            const button = document.createElement("button");
+            button.textContent = material.name;
+            button.addEventListener("click", () => handleMaterialChange(index));
+            materialButtonsContainer.appendChild(button);
+          });
+        } else {
+          console.log("No material selection buttons needed.");
+        }
       }
     }
 
