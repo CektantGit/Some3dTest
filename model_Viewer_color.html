@@ -140,9 +140,11 @@
     }
       // Принимаем сообщения от родительской страницы
       window.addEventListener('message', function(event) {
+          console.log(event);
         if (event.origin !== 'https://cektantgit.github.io') return; // Укажите базовый URL вашего сайта
 
         const data = event.data;
+        console.log(data);
 
         // Обрабатываем сообщение вызова handleMaterialChange
         if (data.type === 'handleMaterialChange') {
